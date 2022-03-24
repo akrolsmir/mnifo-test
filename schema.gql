@@ -11,4 +11,5 @@ type GuestbookEntry {
 type Query {
   entries: [GuestbookEntry!]
     @resolver(name: "listLatestEntries", paginated: true)
+  entry(name: String!): GuestbookEntry
 }
