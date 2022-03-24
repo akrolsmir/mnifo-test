@@ -1,36 +1,41 @@
-import { getEntry } from '@/lib/fauna';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react'
+import { getEntry } from '@/lib/fauna'
+import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
-async function getOneEntry(name) {
-  const response = await fetch('/api/entry?name=' + name)
-  const data = await response.json()
-  return data?.entry
-  
-}
-
-function useEntry(name) {
-  const [entry, setEntry] = useState(null);
-  useEffect(() => {
-    getOneEntry(name).then(setEntry);
-  }, [name])
-  return entry;
-}
-
-export default function Slug() {
-  const router = useRouter();
-  const name = router.query.slug
-  const entry = useEntry(name);
-
-  if (router && entry) {
-    const link = entry.message
-    console.log('ready', router, entry, link)
-
-    // Use router to move to the new page
-    router.push(link)
-    return null
-  
+// TODO: use middleware instead ala https://github.com/vercel/examples/tree/main/edge-functions/redirects-upstash
+export async function getStaticProps({ params }) {
+  const e = await getEntry(params.slug)
+  return {
+    props: {
+      entry: e.entry,
+    },
   }
+}
 
-  return (<h1>{name}</h1>)
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export default function Slug({ entry }) {
+  console.log('entry', entry)
+  const router = useRouter()
+  const name = router.query.slug
+
+  // useEffect means that router will only be run client-side
+  useEffect(() => {
+    if (router && entry) {
+      const link = entry.message
+      console.log('ready', router, entry, link)
+
+      // Use router to move to the new page
+      router.push(link)
+      return null
+    }
+  }, [router, entry])
+
+  return (
+    <div>
+      <p>{name}</p>
+    </div>
+  )
 }
